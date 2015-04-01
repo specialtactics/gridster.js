@@ -381,12 +381,10 @@
             size_y: size_y
         });
 
-        /*
-        $nexts.not(exclude).each($.proxy(function(i, widget) {
-            console.log("from_remove")
-            this.move_widget_up( $(widget), size_y );
-        }, this));
-        */
+		nexts.not(exclude).each($.proxy(function(i, widget) {
+			console.log("from_remove")
+			this.move_widget_up( $(widget), size_y );
+		}, this));
 
         this.set_dom_grid_height();
 
@@ -835,6 +833,78 @@
         this.w_queue = {};
 
         this.set_dom_grid_height();
+
+        // ensure there are no blank rows in the grid after dragging
+        // delay in case grid needs time to adjust positions
+        var This = this;
+        setTimeout(function() {
+            This.ensure_no_blank_rows_in_grid(This)
+        }, 50);
+    };
+
+
+    /**
+     * Go through the grid checking for blank rows before the law row
+     * with content in it. If such rows exist, move all widgets below them down
+     */
+    fn.ensure_no_blank_rows_in_grid = function(This) {
+        // Localise var max_rows for use inside closures
+        var max_rows = This.options.max_rows;
+        var max_cols = This.options.max_cols;
+
+        // We will loop through this operation until there are no more empty rows
+        // (in case there are multiple)
+        var foundEmptyRowsLastCheck = false;
+        var runTimesLimit = 5;
+
+        // Loop through
+        do {
+            console.log('checking');
+            foundEmptyRowsLastCheck = false;
+
+            // Make a tally of which rows are empty
+            // false = empty, so all are marked empty by default
+            var rows = [];
+            for (var i = 1; i <= max_rows; ++i) {
+                rows[i] = false;
+            }
+
+            // Loop through grid (columns), and figure out which rows
+            // have content
+            // j = col, i = row
+            for(var j = 1; j <= max_cols; ++j) {
+                for (var i = 1; i <= max_rows; ++i) {
+                    if (This.gridmap[j][i] != false) {
+                        // Just make sure it's not a stuff up by the gridmap
+                        var element = This.gridmap[j][i];
+                        if (element.data('row') > i) {
+                            // Incorrect placement in grid
+                        } else {
+                            // Mark row as not empty
+                            rows[i] = true;
+                        }
+                    }
+                }
+            }
+
+            // Find the last non-empty row
+            var lastNonEmptyRow = max_rows;
+            for (var i = max_rows; i > 0; --i) {
+                if (rows[i] != false) {
+                    lastNonEmptyRow = i;
+                    break;
+                }
+            }
+
+            // Find any empty rows
+            for (var i = 0; i <= lastNonEmptyRow; ++i) {
+                if (rows[i] == false) {
+                    // Move widgets up one row
+                    This.remove_empty_cells(1, i, max_rows, 1);
+                    foundEmptyRowsLastCheck = true;
+                }
+            }
+        } while (foundEmptyRowsLastCheck && --runTimesLimit > 0);
     };
 
 
