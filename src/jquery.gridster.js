@@ -859,7 +859,6 @@
 
         // Loop through
         do {
-            console.log('checking');
             foundEmptyRowsLastCheck = false;
 
             // Make a tally of which rows are empty
